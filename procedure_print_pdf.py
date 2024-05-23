@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as ET
 from fpdf import FPDF
 from collections import defaultdict
+import os
+import datetime
 
 
 def list_to_tuple(lst):
@@ -222,6 +224,7 @@ def create_pdf(data_, pdf_filename, title="Your Default Title"):
     pdf = PDF()
     pdf.title = title
     pdf.add_page()
+    missing_photo_set = set()
 
     for key, v in data_.items():
         print()
@@ -229,8 +232,25 @@ def create_pdf(data_, pdf_filename, title="Your Default Title"):
         print(f'Profile: {key[0]}; {key[1]}; color: {key[2]}/{key[3]} in total:{key[4]}')
         print('-------------------------------------------------')
         pdf.set_font('Arial', 'B', 14)
+        # Установка позиции X перед вставкой изображения
+        pdf.set_x(20)
 
-        pdf.cell(0, 10, f"Profile: {key[0]}; {key[1]}; color: {key[2]}/{key[3]} in total:{key[4]}", ln=True)
+        # im_way = 'C:\\Users\\user\\PycharmProjects\\KR_Nord\\image\\'+ str(key[0])+'.png'
+        im_way = 'image\\' + str(key[0]) + '.png'
+        no_view = 'image\\no_view.png'  #
+
+        # Проверка существования файла
+        if os.path.exists(im_way):
+            # Вставка изображения в PDF
+            pdf.image(im_way, x=10, y=pdf.get_y(), w=10)
+        else:
+            pdf.image(no_view, x=10, y=pdf.get_y(), w=10)
+            # Добавление имени файла в множество
+            missing_photo_set.add(key[0])
+
+        pdf.multi_cell(0, 10, f"Profile: {key[0]}; {key[1]}; color: {key[2]}/{key[3]} in total:{key[4]}")
+
+        # pdf.cell(10, 10, f"Profile: {key[0]}; {key[1]}; color: {key[2]}/{key[3]} in total:{key[4]}", ln=True)
         print('+++++++++++++++++++++')
         kkk = 0
         for i in range(len(v)):
@@ -247,10 +267,22 @@ def create_pdf(data_, pdf_filename, title="Your Default Title"):
                 pdf.cell(0, 8, f" {v[i][9][n][0]} | {v[i][9][n][1]} | {v[i][9][n][2]}"
                                f" | {v[i][9][n][3]} | {v[i][9][n][5]} | {v[i][9][n][4]}", ln=True)
             pdf.set_font('Arial', '', 10)
-            pdf.cell(0, 5, f"----------------S t i c k   n u m b e r  {s_n}  i s   o v e r----------------",
-                     ln=True)
+            pdf.cell(0, 5, f"----------------S t i c k   n u m b e r  {s_n}  i s   o v e r----------------"
+                           f"profile {key[0]}", ln=True)
             kkk = s_n
         pdf.ln(5)  # Добавляем отступ в 10 единиц
+
+    # Запись содержимого множества в файл
+    with open('missing_photo_log.txt', "a") as file:
+        # Записать системную дату и время
+        current_datetime = datetime.datetime.now()
+
+        file.write(f"system date and time: {current_datetime}\n")
+        for item in sorted(missing_photo_set):
+            file.write(item + ';')
+
+        # Добавить разделительную строку
+        file.write("\n" + "-" * 20 + "\n")
 
     pdf.output(pdf_filename)
     print(f"PDF с именем '{pdf_filename}' создан успешно.")
